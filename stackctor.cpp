@@ -5,7 +5,7 @@
 
 //#include "color.h"
 
-#ifndef DEBUGG
+#ifdef DEBUGG
 #define $ printf ( "function <%s> line <%d>\n ", __PRETTY_FUNCTION__, __LINE__ );
 #else
 #define $ printf ("");
@@ -24,7 +24,7 @@ enum Errors_t {
     size_t size_stack = 0;
 };     */
 
-int StackCtor ( char **str, int size_stack, int capacity );
+int StackCtor ( char **str, int *size_stack, const int capacity );
 void StackDump ( const char *begine_line, const char* func_name, const char* file_name,
                  size_t size_stack, size_t capacity );
 int StackDetore ( char **begine_line, size_t size_stack );  // Dtor Destructor DestructStack ConstructStack
@@ -38,7 +38,7 @@ int main()
 $                            // push
     char *str = (char *)calloc ( size_stack, sizeof ( char) );            //free
     char *begine_line = str;
-    char *str_2 = (char *)calloc ( size_stack, sizeof ( char) ); // stack_data {}
+    char *stack_data = (char *)calloc ( size_stack, sizeof ( char) ); // stack_data {}
     char c = 0;
 
     for ( int i = 0; ( c = getchar() ) != '\n'; ++ i ) {
@@ -46,32 +46,33 @@ $                            // push
         if ( capacity == size_stack ) {
             size_stack = 2 * (size_stack);
 
-$           char *ptr = (char *)calloc( size_stack + 1, sizeof( char ) );
-$           //memset ( ptr, 3, size_stack );
+$           /*char *ptr = (char *)calloc( size_stack + 1, sizeof( char ) );
             StackDetore ( &ptr, size_stack );
 
             printf ("address %p\t%s size %d\n", ptr, ptr, strlen(ptr) );
 
             strcpy ( ptr, str );
 
-$           str = ptr;
-            //free ( ptr );
+$           str = ptr;  */
 
-            char *ptr_2 = (char *)calloc( size_stack + 1, sizeof( char ) );
+            //free ( ptr );
+            StackCtor ( &str, &size_stack, capacity );
+
+            /*char *ptr_2 = (char *)calloc( size_stack + 1, sizeof( char ) );
 $           StackDetore ( &ptr_2, size_stack );
-            //memset ( ptr_2, 3, size_stack );
             //Pop ( &str, &str_2 );
 
-            printf ("address %p\t%s size %d\n", ptr_2, ptr_2, strlen(ptr) );
+            //printf ("address %p\t%s size %d\n", ptr_2, ptr_2, strlen(ptr) );
 
-            strcpy ( ptr_2, str_2 );
-            str_2 = ptr_2;
+            strcpy ( ptr_2, stack_data );
+            stack_data = ptr_2;   */
             //free ( ptr_2 );
+            StackCtor ( &stack_data, &size_stack, capacity );
 $       }
         //Push ( &str, &str_2, c, &size_stack, capacity );
         str[i] = c;
         printf ("size %d capacity %d value %c str %s \n", size_stack, capacity, c, str );
-        Pop ( str + i, str_2 + i );
+        Pop ( str + i, stack_data + i );
     }
 
 $
@@ -80,10 +81,10 @@ $
 
     //pop
 
-    StackDump ( str_2, __PRETTY_FUNCTION__, __FILE__, size_stack, capacity );
+    StackDump ( stack_data, __PRETTY_FUNCTION__, __FILE__, size_stack, capacity );
 
     free ( str );
-    free ( str_2 );
+    free ( stack_data );
 
     return 0;
 }
@@ -91,36 +92,17 @@ $
 // realloc() [234345********]
 // realloc() cppref
 
-int StackCtor ( char **str, int size_stack, int capacity )   //void enum
+int StackCtor ( char **str, int *size_stack, int capacity )   //void enum
 {
     assert ( *str != nullptr );   // not assert
 
-$   //StackDump ( *str, __PRETTY_FUNCTION__, __FILE__, size_stack, capacity );  // macro
-    // for realloc use dinamic memory
-    printf ("%p\n", *str);
+    char *ptr = (char *)calloc( *size_stack + 1, sizeof( char ) );
+    StackDetore ( &ptr, *size_stack );
 
-$   char *ptr = ( char *)realloc( *str, 2 * size_stack );     //memset      //+capacity
-    printf ("%p\n", ptr);
+    strcpy ( ptr, *str );
+
+$   *str = ptr;
 $
-    //ptr = strcpy ( ptr, *str );  //
-
-    //free ( str ); //
-
-    /*if ( ptr == nullptr ) {                                         // pointer to the begginig of the line
-
-        return ERROR;
-    }    */
-
-    //StackDetore ( *( char **)str, size_stack );
-
-    //StackDump ( *(char **)str, __PRETTY_FUNCTION__, __FILE__, size_stack, capacity );
-
-$   //printf ( "%s : <%p>\n", __PRETTY_FUNCTION__, ptr );      //
-
-    *str = ptr;
-    printf ("str : %p\n", *str );
-$
-    return 2 * size_stack ;
 }
 
 void StackDump ( const char *begine_line, const char* func_name, const char* file_name,
