@@ -5,24 +5,34 @@
 
 //#include "color.h"
 
-#ifdef DEBUGG
+#ifdef DEBUGG     //
 #define $ printf ( "function <%s> line <%d>\n ", __PRETTY_FUNCTION__, __LINE__ );
 #else
-#define $ printf ("");
+#define $
 #endif
     //color
+
+#define INFORMATION __PRETTY_FUNCTION__, __FILE__
+#define name_print(a) printf ( #a " = %s\n", a );
 
 enum Errors_t {
     NO_ERRORS = 1,
     ERROR     = 2
 };
 
+struct Error_t {
+    int ERROR = 0;
+};
+
 struct Stack_Data_t {
-    char *str        = 0;             //free
-    int capacity     = 0;
-    int size_stack   = 2;
-    char *stack_data = 0;
-    char value       = 0;
+    long long canary_left   = 0xDED0F;
+    char *str_begine        = 0;
+    char *str               = 0;             //free
+    int capacity            = 0;
+    int size_stack          = 2;
+    char *stack_data_begine = 0;
+    char *stack_data        = 0;
+    long long canary_right  = 0xDED0F;
 };
 
 int StackCheck ( char **str, char **stack_data, int *size_stack, const int capacity );
@@ -34,30 +44,48 @@ Errors_t StackPop ( const char *str_1, char *str_2 );
 Errors_t StackPush ( char **str, char **str_2, const char value, int * size_stack, const int capacity );
 void StackCreator ( int *capacity,   char **stack_data,
                     int *size_stack, char *str[]  );
+int StackHash ( void *begine_stack, void *end_stack );
 
 int main()
 {
+    //printf ("%d\n", sizeof ( long ) );
     Stack_Data_t Stack = {};
 $
-    Stack.str = (char *)calloc ( Stack.size_stack, sizeof ( char) );            //free
-    Stack.stack_data = (char *)calloc ( Stack.size_stack, sizeof ( char) ); //   assert
+    Stack.str_begine = (char *)calloc ( Stack.size_stack + sizeof(long long) * 2, sizeof ( char) );   //free
+    Stack.str = Stack.str_begine + sizeof ( long long );
+
+    StackHash ( &Stack.canary_left,  &Stack.canary_right );
+
+    Stack.stack_data_begine = (char *)calloc ( Stack.size_stack + sizeof(long long) * 2, sizeof ( char) ); //   assert
+    Stack.stack_data = Stack.stack_data_begine + sizeof ( long long );     //stackctor
+
+    //printf ("begine <%p> str <%p>", Stack.str_begine, Stack.str );
 
     StackCreator ( &Stack.capacity, &Stack.stack_data, &Stack.size_stack, &Stack.str  );
 
-    StackDump ( Stack.stack_data, __PRETTY_FUNCTION__, __FILE__, Stack.size_stack, Stack.capacity );
+    StackDump ( Stack.stack_data, INFORMATION , Stack.size_stack, Stack.capacity );
 
     free ( Stack.str );
     free ( Stack.stack_data );
 
+    StackHash ( &Stack.canary_left,  &Stack.canary_right );
+
     return 0;
 }
 
+// stackResize
 int StackCtor ( char **str, int *size_stack, int capacity )   //void enum
 {
     assert ( *str != nullptr );   // not assert
+                                                     #warning no canary
+    char *ptr_begine = (char *)calloc ( *size_stack + sizeof(long long) * 2, sizeof ( char) );   //free
+    char *ptr = ptr_begine + sizeof ( long long );
 
-    char *ptr = (char *)calloc( *size_stack + 1, sizeof( char ) );
-    StackDtor ( &ptr, *size_stack );
+    memset ( *begine_line, 3, size_stack * sizeof ( char ) );
+
+
+
+    //StackDtor ( &ptr, *size_stack );
 
     strcpy ( ptr, *str );
 
@@ -65,16 +93,18 @@ $   *str = ptr;
 $
 }
 
-void StackDump ( const char *begine_line, const char* func_name, const char* file_name,
+void StackDump ( const char *stack, const char* func_name, const char* file_name,
                  size_t size_stack, const size_t capacity )    // void
 {
-$   printf ( "Stack [%p] "" 'stk' called from%s\n "   // from main.cpp
-             "{\n\t%s  \n\t{ \n "                      //__PRETTY_FINC__
+$   printf ( "Stack [%p] " );
+    name_print( stack )
+    printf ( " called from%s\n "
+             "{\n\t%s  \n\t{ \n "
              " \t\tsize = %d \n "
              " \t\tcapacity = %d \n "
-             " \t\tdata [%p]:\n", begine_line , file_name, func_name, size_stack, capacity, begine_line  ); // data
+             " \t\tdata [%p]:\n", file_name, func_name, size_stack, capacity, stack  ); // data
 $   for ( int i = 0; i < size_stack; ++i ) {
-        printf ( "\t\tdata[%d] = %c \n", i, begine_line[i] );
+        printf ( "\t\tdata[%d] = %c \n", i, stack[i] );
     }
     printf ( "\t}\n}\n");
 }
@@ -115,7 +145,7 @@ Errors_t StackPop ( const char *str_1, char *str_2 )
 int StackCheck ( char **str, char **stack_data, int *size_stack, const int capacity )
 {
     if ( capacity == *size_stack ) {
-        *size_stack = 2 * (*size_stack);
+        *size_stack = 2 * (*size_stack);     // push
 
         StackCtor ( str, size_stack, capacity );
 
@@ -140,5 +170,34 @@ $       StackPop ( *str + i, *stack_data + i );
     }
 }
 
+int StackHash ( void *begine_stack, void *end_stack )
+{
+    int size_stack = (char *)end_stack - (char *)begine_stack;
+    long long sum  = 0;
+
+    for ( int i = 0; i < size_stack; ++i ) {
+        sum += *( (char *)begine_stack + i );
+    }
+
+    printf ("%d\n", size_stack);
+    printf ("%lld\n", sum );
+
+    return sum;
+}
+                                                                      //switch
+int Verificator ( const char *str, size_t size_stack,
+                  const size_t capacity, const char *str_2, int *error_indificate )   // struct
+{
+    if ( capacity < 0 ) {
+        (*error_indificate ) | ( (*error_indificate) | 1 << 0 );//enum
+    }
+    if ( size_stack < 0 && size_stack < capacity ) {
+        (*error_indificate ) | ( (*error_indificate) | 1 << 1 );
+    }
+    if ( str == nullptr ) {
+        (*error_indificate ) | ( (*error_indificate) | 1 << 2 );
+    }
+
+}
 
 
