@@ -14,15 +14,16 @@
 
 enum Errors_t {
     NO_ERRORS = 1,
-    ERROR = 2
+    ERROR     = 2
 };
 
-/*struct Stack_Data_t {
-    char *str         = 0;             //free
-    char *begine_line = str;
-    size_t capacity   = 0;
-    size_t size_stack = 0;
-};     */
+struct Stack_Data_t {
+    char *str        = 0;             //free
+    int capacity     = 0;
+    int size_stack   = 2;
+    char *stack_data = 0;
+    char value       = 0;
+};
 
 int StackCheck ( char **str, char **stack_data, int *size_stack, const int capacity );
 int StackCtor ( char **str, int *size_stack, const int capacity );
@@ -31,33 +32,22 @@ void StackDump ( const char *begine_line, const char* func_name, const char* fil
 int StackDtor ( char **begine_line, size_t size_stack );
 Errors_t StackPop ( const char *str_1, char *str_2 );
 Errors_t StackPush ( char **str, char **str_2, const char value, int * size_stack, const int capacity );
+void StackCreator ( int *capacity,   char **stack_data,
+                    int *size_stack, char *str[]  );
 
 int main()
 {
-    int capacity = 0;
-    int size_stack = 2;  // delete 1
-$                            // push
-    char *str = (char *)calloc ( size_stack, sizeof ( char) );            //free
-    char *begine_line = str;
-    char *stack_data = (char *)calloc ( size_stack, sizeof ( char) ); //   assert
-    char c = 0;
+    Stack_Data_t Stack = {};
+$
+    Stack.str = (char *)calloc ( Stack.size_stack, sizeof ( char) );            //free
+    Stack.stack_data = (char *)calloc ( Stack.size_stack, sizeof ( char) ); //   assert
 
-    for ( int i = 0; ( c = getchar() ) != '\n'; ++ i ) {
-        ++capacity;
-        if ( capacity == size_stack ) {
+    StackCreator ( &Stack.capacity, &Stack.stack_data, &Stack.size_stack, &Stack.str  );
 
-            StackCheck ( &str, &stack_data, &size_stack, capacity );
-            StackDump ( stack_data, __PRETTY_FUNCTION__, __FILE__, size_stack, capacity );
-            StackDump ( str, __PRETTY_FUNCTION__, __FILE__, size_stack, capacity );
-$       }
-        str[i] = c;
-        StackPop ( str + i, stack_data + i );
-    }
+    StackDump ( Stack.stack_data, __PRETTY_FUNCTION__, __FILE__, Stack.size_stack, Stack.capacity );
 
-    StackDump ( stack_data, __PRETTY_FUNCTION__, __FILE__, size_stack, capacity );
-
-    free ( str );
-    free ( stack_data );
+    free ( Stack.str );
+    free ( Stack.stack_data );
 
     return 0;
 }
@@ -131,6 +121,23 @@ int StackCheck ( char **str, char **stack_data, int *size_stack, const int capac
 
         StackCtor ( stack_data, size_stack, capacity );
 $   }
+}
+
+void StackCreator ( int *capacity,   char **stack_data,
+                    int *size_stack, char *str[]  )
+{
+    char c = 0;
+    for ( int i = 0; ( c = getchar() ) != '\n'; ++ i ) {
+        ++*capacity;
+        if ( *capacity == *size_stack ) {
+
+$           StackCheck ( str, stack_data, size_stack, *capacity );
+$           StackDump ( *stack_data, __PRETTY_FUNCTION__, __FILE__, *size_stack, *capacity );
+            StackDump ( *str, __PRETTY_FUNCTION__, __FILE__, *size_stack, *capacity );
+$       }
+$       *(*str + i) = c;
+$       StackPop ( *str + i, *stack_data + i );
+    }
 }
 
 
