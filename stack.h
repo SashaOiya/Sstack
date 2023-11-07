@@ -10,7 +10,7 @@ typedef float elem_t;
 #include <cassert>
 
 #ifdef DEBUGG
-#define $ printf ( "function <%s> line <%d>\n ", __PRETTY_FUNCTION__, __LINE__ );
+#dnefine $ printf ( "function <%s> line <%d>\n ", __PRETTY_FUNCTION__, __LINE__ );
 #else
 #define $
 #endif
@@ -18,37 +18,37 @@ typedef float elem_t;
 #define INFORMATION __PRETTY_FUNCTION__, __FILE__
 #define name_print(a) printf ( #a " = %s\n", a );
 
-enum Errors_t {
-    NO_ERRORS = 1,
-    ERROR     = 2
-};
-
-struct Error_t {        // typedef
-    int ERROR = 0;
+enum Err_t {
+    SIZE_ERR  = 1,
+    HASH_ERR  = 2,
+    DATA_ERR  = 3,
+    CANA_ERR  = 4,
+    CAPA_ERR  = 5,
+    OK        = 6
 };
 
 typedef long canary_t;
 
 // #ifdef CANARY_PROTECTION
 struct Stack_Data_t {          // Stack_t
-    long canary_left    = 0xDED;
-    elem_t *str             = 0;             //free
-    int capacity            = 0;
-    int size_stack          = 2;
-    long stack_hash    = 0;
-    long canary_right   = 0xDED;
+    canary_t canary_left   = 0xDED;
+    elem_t *data           = 0;
+    int capacity           = 0;
+    int size_stack         = 2;
+    long stack_hash        = 0;
+    int stack_status       = 0;
+    canary_t canary_right  = 0xDED;
 };
 
-elem_t * StackCtor ( const int size_stack );
-elem_t* StackRedistribute ( elem_t *str, int size_stack );
+void StackCtor ( Stack_Data_t *Stack );
+elem_t* StackRealloc ( elem_t *str, int size_stack );
 void StackDump ( Stack_Data_t Stack, const char* func_name, const char* file_name );
-int StackDtor ( elem_t *stack, size_t size_stack );
-Errors_t StackPush ( Stack_Data_t *Stack, const elem_t value );
+void StackDtor ( Stack_Data_t *Stack );
+void StackPush ( Stack_Data_t *Stack, const elem_t value );
 elem_t StackPop ( Stack_Data_t *Stack );
-//void StackCreator ( FILE *f, int *capacity, int *size_stack, char_t *str[], int n_lines  );
 int StackHash ( Stack_Data_t *Stack );
-int StackRehash ( Stack_Data_t *Stack );
-void Verificator ( Stack_Data_t *Stack, int *error_indificate );
+void StackRehash ( Stack_Data_t *Stack );
+Err_t Verificator ( Stack_Data_t *Stack );
 int GetFileSize ( FILE * f );
 
 #endif //STACK
