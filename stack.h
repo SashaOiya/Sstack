@@ -1,8 +1,7 @@
 #ifndef STACK
 #define STACK
 
-typedef float elem_t;
-#define SPECIFIER "%g"
+#define SPECIFIER "%d"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +9,7 @@ typedef float elem_t;
 #include <cassert>
 
 #ifdef DEBUGG
-#dnefine $ printf ( "function <%s> line <%d>\n ", __PRETTY_FUNCTION__, __LINE__ );
+#define $ printf ( "function <%s> line <%d>\n ", __PRETTY_FUNCTION__, __LINE__ );
 #else
 #define $
 #endif
@@ -28,6 +27,7 @@ enum Err_t {
 };
 
 typedef long canary_t;
+typedef int elem_t;
 
 // #ifdef CANARY_PROTECTION
 struct Stack_Data_t {          // Stack_t
@@ -51,4 +51,4 @@ void StackRehash ( Stack_Data_t *Stack );
 Err_t Verificator ( Stack_Data_t *Stack );
 int GetFileSize ( FILE * f );
 
-#endif //STACK
+#endif  //STACK
