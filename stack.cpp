@@ -1,61 +1,34 @@
 #include "stack.h"
-
-int main()
-{
-    Stack_Data_t Stack = {};
-
-    FILE *f = fopen ( "code.txt", "r" );
-    if ( !f ) {
-        perror( "File opening failed" );
-
-        return -1;
-    }
-
-    StackCtor ( &Stack );
-
-    StackPush ( &Stack, 4 );
-    StackPush ( &Stack, 7 );
-    StackPop  ( &Stack );
-    StackPush ( &Stack, 8 );
-    StackPush ( &Stack, 9 );
-    StackPush ( &Stack, 10 );
-
-    StackDump ( Stack, INFORMATION );
-
-    StackDtor ( &Stack );
-
-    return 0;
-}
-
 // stackResize
 void StackCtor ( Stack_Data_t *Stack )
 {
-    Stack->data = (elem_t *)calloc( Stack->size_stack + sizeof( canary_t ) * 2, sizeof ( elem_t ) ) + sizeof ( canary_t );
-    assert ( Stack->data != nullptr );
-    // StackRealloc()
+    int pointer = sizeof( canary_t ) / sizeof ( elem_t );
 
+    Stack->data = (elem_t *)calloc( Stack->size_stack + 2 * pointer, sizeof ( elem_t ) );
+    assert ( Stack->data != nullptr );
+
+    Stack->data = Stack->data + pointer;
+
+    CanaryProtection ( Stack->data - pointer, Stack );
 $   Stack->stack_hash = StackHash ( Stack );
 }
 
-elem_t* StackRealloc ( Stack_Data_t *Stack )
-{                                        //#warning no canary    //realloc
+void StackRealloc ( Stack_Data_t *Stack )
+{
+    Stack->size_stack = 2 * (Stack->size_stack);
+
     int pointer = sizeof( canary_t ) / sizeof ( elem_t );
 
-$   //elem_t *ptr_begine = (elem_t *)calloc( Stack->size_stack + 2 * pointer , sizeof ( elem_t ) );
-    Stack->data = ( elem_t *)realloc ( Stack->data, Stack->size_stack * sizeof ( elem_t ) );  // - pointer
-    assert ( Stack->data != nullptr );
+$   elem_t *canary_begine = (elem_t *)calloc( Stack->size_stack + 2 * pointer , sizeof ( elem_t ) );
+    assert ( canary_begine != nullptr );
 
-    //*(canary_t *)Stack->data = Stack->canary_left;
+    elem_t *stack_begine = canary_begine + pointer;
 
-    //elem_t *ptr = ptr_begine + pointer;
+    CanaryProtection ( canary_begine, Stack );
 
-    *( Stack->data + pointer + Stack->size_stack ) = Stack->canary_right;
-$
-    //Stack->data += pointer;
+$   memcpy ( stack_begine, Stack->data, Stack->size_stack * sizeof ( elem_t ) / 2 );
 
-$   //memcpy ( ptr, Stack->data, Stack->size_stack * sizeof ( elem_t ) / 2 );
-
-$   //return ptr;
+    Stack->data = stack_begine;
 }
 
 void StackDump ( Stack_Data_t Stack, const char* func_name, const char* file_name )
@@ -75,7 +48,7 @@ $       printf ( "\t\tdata[%d] = ", i );
 $   printf ( "\t}\n}\n");
 }
 
-void StackDtor ( Stack_Data_t *Stack )      // plus errors check
+void StackDtor ( Stack_Data_t *Stack )
 {
     Verificator ( Stack );
 
@@ -89,16 +62,12 @@ void StackPush ( Stack_Data_t *Stack, const elem_t value )
     assert ( Stack != nullptr );
 
     Verificator ( Stack );
-
     StackRehash ( Stack );
 
     ++(Stack->capacity);
 
 $   if ( Stack->capacity == Stack->size_stack ) {
-$       Stack->size_stack = 2 * (Stack->size_stack);
-
-$       //Stack->data =
-        StackRealloc ( Stack );
+$       StackRealloc ( Stack );
 $   }
 $   *( Stack->data + Stack->capacity - 1 ) = value;
 
@@ -108,7 +77,6 @@ $   *( Stack->data + Stack->capacity - 1 ) = value;
 elem_t StackPop ( Stack_Data_t *Stack  )
 {
     Verificator ( Stack );
-
     StackRehash ( Stack );
 
     elem_t temp = *( Stack->data + Stack->capacity - 1 );
@@ -165,6 +133,7 @@ Err_t Verificator ( Stack_Data_t *Stack )
 
         return DATA_ERR;
     }
+    #ifdef CANARY_PROTECTION
     if ( Stack->canary_left != 0xDED || Stack->canary_right != 0xDED ||
          Stack->data[-sizeof(canary_t) / sizeof(elem_t)] != 0xDED ||
          Stack->data[Stack->size_stack] != 0xDED ) {
@@ -174,6 +143,7 @@ Err_t Verificator ( Stack_Data_t *Stack )
 
         return CANA_ERR;
     }
+    #endif
     if ( Stack->capacity < 0 ) {
         Stack->stack_status = Stack->stack_status | ( ( Stack->stack_status | 1 ) << 4 );
         printf ( "Capacity error\n" );
@@ -182,4 +152,12 @@ Err_t Verificator ( Stack_Data_t *Stack )
     }
 
     return OK;
+}
+
+void CanaryProtection ( elem_t *canary_begine, Stack_Data_t *Stack )
+{
+    #ifdef CANARY_PROTECTION
+    *(canary_t *)canary_begine = Stack->canary_left;
+    *( canary_begine + sizeof( canary_t ) / sizeof ( elem_t ) + Stack->size_stack ) = Stack->canary_right;
+    #endif
 }
