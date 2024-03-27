@@ -8,48 +8,44 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cassert>
-
-#ifdef DEBUGG
-#define $ printf ( "function <%s> line <%d>\n ", __PRETTY_FUNCTION__, __LINE__ );
-#else
-#define $
-#endif
+#include "my_prog.h"
 
 #define INFORMATION __PRETTY_FUNCTION__, __FILE__
-#define name_print(a) printf ( #a " = %s\n", a );
+const int stack_mul_coeff = 2;
 
-enum Err_t {
-    SIZE_ERR  = 1,
-    HASH_ERR  = 2,
-    DATA_ERR  = 3,
-    CANA_ERR  = 4,
-    CAPA_ERR  = 5,
-    OK        = 6
+enum Stack_Errors_t {
+    STACK_NO_ERR   = 0,
+    STACK_SIZE_ERR = 1,
+    STACK_HASH_ERR = 2,
+    STACK_DATA_ERR = 3,
+    STACK_CANA_ERR = 4,
+    STACK_CAPA_ERR = 5
 };
 
 typedef long canary_t;
 typedef int elem_t;
 
-struct Stack_Data_t {
-    canary_t canary_left = 0xDED;
+struct Stack_t {
+    canary_t canary_left   = 0xDED;
     elem_t *data           = 0;
     int capacity           = 0;
     int size_stack         = 1;
     long stack_hash        = 0;
     int stack_status       = 0;
-    canary_t canary_right = 0xDED;
+    canary_t canary_right  = 0xDED;
 };
 
-void StackCtor ( Stack_Data_t *Stack );
-void StackRealloc ( Stack_Data_t *Stack );
-void StackDump ( Stack_Data_t Stack, const char* func_name, const char* file_name );
-void StackDtor ( Stack_Data_t *Stack );
-void StackPush ( Stack_Data_t *Stack, const elem_t value );
-elem_t StackPop ( Stack_Data_t *Stack );
-int StackHash ( Stack_Data_t *Stack );
-void StackRehash ( Stack_Data_t *Stack );
-Err_t Verificator ( Stack_Data_t *Stack );
-int GetFileSize ( FILE * f );
-void CanaryProtection ( elem_t *canary_begine, Stack_Data_t *Stack );
+Errors_t Stack_Ctor    ( Stack_t *stack );
+void     Stack_Dtor    ( Stack_t *stack );
+
+Errors_t Stack_Resize ( Stack_t *stack );
+void     Stack_Dump   ( Stack_t *stack, const char* func_name, const char* file_name );
+void     Stack_Push   ( Stack_t *stack, const elem_t value );
+elem_t   Stack_Pop    ( Stack_t *stack );
+
+int            Stack_Hash        ( Stack_t *stack );
+void           Stack_Rehash      ( Stack_t *stack );
+void           Canary_Protection ( Stack_t *stack, elem_t *canary_begine );
+Stack_Errors_t Stack_Verificator ( Stack_t *stack );
 
 #endif  //STACK
