@@ -1,44 +1,39 @@
 #include "stack.h"
 
-Errors_t Stack_Ctor ( Stack_t *stack )
+Error_t Stack_Ctor ( Stack_t *stack )
 {
     assert ( stack != nullptr );
 
-    const int n_byte_begin_stack = sizeof( canary_t ) / sizeof ( elem_t );
+    stack->data = (elem_t *)calloc( stack->size_stack * sizeof ( elem_t ) + 2 * sizeof ( canary_t ), 1 );
+    if ( !stack->data ) {
 
-    stack->data = (elem_t *)calloc( stack->size_stack + stack_mul_coeff * n_byte_begin_stack, sizeof ( elem_t ) );
-    if ( !stack->data ) {//FIXME wrong size calculation: calloc( Stack->size_stack * elem_t + 2 * sizeof(canaty_t), 1)
-
-        return ERR_CALLO;
+        return MEMMORY_ERR;
     }
-
-    stack->data = stack->data + n_byte_begin_stack;
-
-    Canary_Protection ( stack, stack->data - n_byte_begin_stack );
+    stack->data = (elem_t*)((char*)stack->data + sizeof(canary_t) );
+    Canary_Protection ( stack, (elem_t*)((char*)stack->data - sizeof(canary_t) ) );
 $   stack->stack_hash = Stack_Hash ( stack );
 
     return NO_ERR;
 }
 
-Errors_t Stack_Resize ( Stack_t *stack ) //FIXME use realloc
+Error_t Stack_Resize ( Stack_t *stack )
 {
     assert ( stack != nullptr );
 
     stack->size_stack *= stack_mul_coeff;
-    const int n_byte_begin_stack = sizeof ( canary_t ) / sizeof ( elem_t );
 
-$   elem_t *canary_begin = (elem_t *)calloc ( stack->size_stack + stack_mul_coeff * n_byte_begin_stack, sizeof ( elem_t ) );
+$   elem_t *canary_begin = (elem_t *)calloc ( stack->size_stack * sizeof ( elem_t ) + 2 * sizeof ( canary_t ), 1 );
     if ( !canary_begin ) {
 
-        return ERR_CALLO;
+        return MEMMORY_ERR;
     }
+    elem_t *stack_begin = (elem_t*)((char*)canary_begin + sizeof(canary_t));
 
-    elem_t *stack_begin = canary_begin + n_byte_begin_stack;
+$   memcpy ( stack_begin, stack->data, stack->size_stack * ( sizeof ( elem_t ) / stack_mul_coeff ) );
+    free ( (char *)stack->data - sizeof ( canary_t ) );
+    stack->data = stack_begin;
 
     Canary_Protection ( stack, canary_begin );
-
-$   memcpy ( stack_begin, stack->data, stack->size_stack * sizeof ( elem_t ) / stack_mul_coeff );
-    stack->data = stack_begin;
 
     return NO_ERR;
 }
@@ -48,6 +43,8 @@ void Stack_Dump ( Stack_t *stack, const char* func_name, const char* file_name )
     assert ( func_name != nullptr );
     assert ( file_name != nullptr );
     assert ( stack     != nullptr );
+
+    Stack_Verificator ( stack );
 
 $   printf ( "Stack [%p] ", stack->data );
     printf ( " called from%s\n "
@@ -63,15 +60,13 @@ $       printf ( "\t\tdata[%d] = ", i );
 $   printf ( "\t}\n}\n");
 }
 
-void Stack_Dtor ( Stack_t *stack )   // error may be
+void Stack_Dtor ( Stack_t *stack )
 {
     assert ( stack != nullptr );
     Stack_Verificator ( stack );
-
-$   memset ( stack->data - sizeof ( canary_t ), 3 /* ? */,
-             stack->size_stack * sizeof ( elem_t ) + stack_mul_coeff * sizeof ( canary_t ) );
-
-    free ( stack->data - sizeof ( canary_t ) );
+$
+    free ( (char*)stack->data - sizeof ( canary_t ) );
+    stack->data = nullptr;
 }
 
 void Stack_Push ( Stack_t *stack, const elem_t value )
@@ -83,7 +78,7 @@ void Stack_Push ( Stack_t *stack, const elem_t value )
     ++(stack->capacity);
 
 $   if ( stack->capacity == stack->size_stack ) {
-$       while ( Stack_Resize ( stack ) != NO_ERR ) {   //
+$       while ( Stack_Resize ( stack ) != NO_ERR ) {
             ;
         }
 $   }
@@ -96,7 +91,7 @@ elem_t Stack_Pop ( Stack_t *stack  )
 {
     assert ( stack != nullptr );
     Stack_Rehash ( stack );
-    Stack_Verificator ( stack );
+    Stack_Verificator ( stack ); // capacity
 
     elem_t temp = *( stack->data + stack->capacity - 1 );
     --(stack->capacity);
