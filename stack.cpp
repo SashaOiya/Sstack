@@ -4,13 +4,19 @@ Error_t Stack_Ctor ( Stack_t *stack )
 {
     assert ( stack != nullptr );
 
+    #ifdef CANARY_PROTECTION
     stack->data = (elem_t *)calloc( stack->size_stack * sizeof ( elem_t ) + 2 * sizeof ( canary_t ), 1 );
+    #else
+    stack->data = (elem_t *)calloc( stack->size_stack * sizeof ( elem_t ), 1 );
+    #endif
     if ( !stack->data ) {
 
         return MEMMORY_ERR;
     }
+    #ifdef CANARY_PROTECTION
     stack->data = (elem_t*)((char*)stack->data + sizeof(canary_t) );
     Canary_Protection ( stack, (elem_t*)((char*)stack->data - sizeof(canary_t) ) );
+    #endif
 $   stack->stack_hash = Stack_Hash ( stack );
 
     return NO_ERR;
@@ -22,18 +28,27 @@ Error_t Stack_Resize ( Stack_t *stack )
 
     stack->size_stack *= stack_mul_coeff;
 
+    #ifdef CANARY_PROTECTION
 $   elem_t *canary_begin = (elem_t *)calloc ( stack->size_stack * sizeof ( elem_t ) + 2 * sizeof ( canary_t ), 1 );
+    #else
+    elem_t *canary_begin = (elem_t *)calloc ( stack->size_stack * sizeof ( elem_t ), 1 );
+    #endif
     if ( !canary_begin ) {
 
         return MEMMORY_ERR;
     }
-    elem_t *stack_begin = (elem_t*)((char*)canary_begin + sizeof(canary_t));
 
+    #ifdef CANARY_PROTECTION
+    elem_t *stack_begin = (elem_t*)((char*)canary_begin + sizeof(canary_t));
 $   memcpy ( stack_begin, stack->data, stack->size_stack * ( sizeof ( elem_t ) / stack_mul_coeff ) );
     free ( (char *)stack->data - sizeof ( canary_t ) );
     stack->data = stack_begin;
-
     Canary_Protection ( stack, canary_begin );
+    #else
+    memcpy ( canary_begin, stack->data, stack->size_stack * ( sizeof ( elem_t ) / stack_mul_coeff ) );
+    free ( stack->data );
+    stack->data = canary_begin;
+    #endif
 
     return NO_ERR;
 }
@@ -65,7 +80,11 @@ void Stack_Dtor ( Stack_t *stack )
     assert ( stack != nullptr );
     Stack_Verificator ( stack );
 $
+    #ifdef CANARY_PROTACTION
     free ( (char*)stack->data - sizeof ( canary_t ) );
+    #else
+    free ( stack->data );
+    #endif
     stack->data = nullptr;
 }
 
@@ -78,7 +97,7 @@ void Stack_Push ( Stack_t *stack, const elem_t value )
     ++(stack->capacity);
 
 $   if ( stack->capacity == stack->size_stack ) {
-$       while ( Stack_Resize ( stack ) != NO_ERR ) {
+$       while ( Stack_Resize ( stack ) != NO_ERR ) {     // error
             ;
         }
 $   }
@@ -179,8 +198,6 @@ void Canary_Protection ( Stack_t *stack, elem_t *canary_begine )
     assert ( canary_begine != nullptr );
     assert ( stack != nullptr );
 
-    #ifdef CANARY_PROTECTION
     *(canary_t *)canary_begine = stack->canary_left;
     *( canary_begine + sizeof( canary_t ) / sizeof ( elem_t ) + stack->size_stack ) = stack->canary_right;
-    #endif
 }
